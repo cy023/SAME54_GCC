@@ -12,8 +12,10 @@
 TARGET = main
 
 # Upload Info.
-COMPORT    ?= /dev/ttyACM0
-UPLOAD_HEX ?= test_01_sysnow
+COMPORT    ?= 
+UPLOAD_HEX ?= test_00_uart
+# UPLOAD_HEX ?= test_01_sysnow
+
 
 ## MCU Info.
 CPU       = -mcpu=cortex-m4
@@ -81,7 +83,7 @@ LDSCRIPT = Device_Startup/same54p20a_flash.ld
 ################################################################################
 # Toolchain
 ################################################################################
-COMPILER_PATH ?= /home/cy023/Program_Files/arm-gnu-toolchain-6.3.1.508-linux.any.x86_64/arm-none-eabi/bin/
+COMPILER_PATH ?= 
 CROSS   := $(COMPILER_PATH)arm-none-eabi
 CC      := $(CROSS)-gcc
 AR      := $(CROSS)-ar
@@ -148,7 +150,6 @@ clean:
 	-rm -rf $(BUILD_DIR)
 
 upload:
-	sudo chmod 666 $(COMPORT)
 	asaloader prog -p $(COMPORT) -f build/$(UPLOAD_HEX).hex
 
 terminal:
