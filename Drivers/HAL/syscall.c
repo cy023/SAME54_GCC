@@ -8,10 +8,9 @@
 
 #include "uart.h"
 
-int _write (__attribute__((unused)) int fd, char *ptr, int len)
+int _write(__attribute__((unused)) int fd, char *ptr, int len)
 {
-    int i;
-    for(i = 0; i< len; i++) {
+    for (int i = 0; i < len; i++) {
         uart0_putc(*ptr++);
         if (*ptr == '\n')
             uart0_putc('\r');
@@ -19,10 +18,9 @@ int _write (__attribute__((unused)) int fd, char *ptr, int len)
     return len;
 }
 
-int _read (__attribute__((unused)) int fd, char *ptr, int len)
+int _read(__attribute__((unused)) int fd, char *ptr, int len)
 {
-    int i;
-    for(i = 0; i< len; i++)
+    for (int i = 0; i < len; i++)
         *ptr++ = uart0_getc();
     return len;
 }
