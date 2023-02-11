@@ -16,7 +16,7 @@
 
 static void system_clock_init(void)
 {
-    // XOSC1 PIN multiplxer set
+    // XOSC1 pin multiplxer set
     PORT_REGS->GROUP[1].PORT_PMUX[11] = PORT_PMUX_PMUXO_N | PORT_PMUX_PMUXE_N;
     PORT_REGS->GROUP[1].PORT_PINCFG[22] |= PORT_PINCFG_PMUXEN(1);
     PORT_REGS->GROUP[1].PORT_PINCFG[23] |= PORT_PINCFG_PMUXEN(1);
@@ -53,9 +53,26 @@ static void system_clock_init(void)
 
 static void system_clock_deinit(void)
 {
+    // MCLK reset
+    MCLK_REGS->MCLK_APBAMASK &= ~MCLK_APBAMASK_SERCOM0(1);    // sercom 0 bus close
+
     // GCLK reset
     GCLK_REGS->GCLK_CTRLA = GCLK_CTRLA_SWRST(1);
     while (GCLK_REGS->GCLK_SYNCBUSY & GCLK_SYNCBUSY_SWRST_Msk);
+
+    // XOSC1 reset
+    // The oscillator is running when a peripheral is requesting the oscillator to be used as a clock source.
+    // The oscillator is not running if no peripheral is requesting the clock source.
+    OSCCTRL_REGS->OSCCTRL_XOSCCTRL[1] |= OSCCTRL_XOSCCTRL_ONDEMAND(1);
+    OSCCTRL_REGS->OSCCTRL_XOSCCTRL[1] &= ~OSCCTRL_XOSCCTRL_IMULT(4);
+    OSCCTRL_REGS->OSCCTRL_XOSCCTRL[1] &= ~OSCCTRL_XOSCCTRL_IPTAT(3);
+    OSCCTRL_REGS->OSCCTRL_XOSCCTRL[1] &= ~OSCCTRL_XOSCCTRL_XTALEN(1);
+    OSCCTRL_REGS->OSCCTRL_XOSCCTRL[1] &= ~OSCCTRL_XOSCCTRL_ENABLE(1);
+
+    // XOSC1 pin multiplxer reset
+    PORT_REGS->GROUP[1].PORT_PMUX[11] &= ~(PORT_PMUX_PMUXO_N | PORT_PMUX_PMUXE_N);
+    PORT_REGS->GROUP[1].PORT_PINCFG[22] &= ~PORT_PINCFG_PMUXEN(1);
+    PORT_REGS->GROUP[1].PORT_PINCFG[23] &= ~PORT_PINCFG_PMUXEN(1);
 }
 
 static void system_power_init(void)
@@ -70,20 +87,21 @@ static void system_power_deinit(void)
 
 static void system_uart0_init(void)
 {
-    // UART0 PIN multiplexer set
+    // uart0 pin multiplexer set
     PORT_REGS->GROUP[0].PORT_PMUX[2] |= PORT_PMUX_PMUXE_D; // set PA4 as function D (SERCOM0)
     PORT_REGS->GROUP[0].PORT_PINCFG[4] |= PORT_PINCFG_PMUXEN(1); // set PA4 PMUXEN
     PORT_REGS->GROUP[0].PORT_PMUX[3] |= PORT_PMUX_PMUXE_D; // set PA6 as function D (SERCOM0)
     PORT_REGS->GROUP[0].PORT_PINCFG[6] |= PORT_PINCFG_PMUXEN(1); // set PA6 PMUXEN
 
+    // uart0 init
     SERCOM0_REGS->USART_INT.SERCOM_CTRLA |= SERCOM_USART_INT_CTRLA_MODE_USART_INT_CLK;
     SERCOM0_REGS->USART_INT.SERCOM_CTRLA |= SERCOM_USART_INT_CTRLA_RXPO_PAD2;
     SERCOM0_REGS->USART_INT.SERCOM_CTRLA |= SERCOM_USART_INT_CTRLA_DORD_LSB;
     SERCOM0_REGS->USART_INT.SERCOM_BAUD = 62180;
 
-    SERCOM0_REGS->USART_INT.SERCOM_CTRLB |= SERCOM_USART_INT_CTRLB_TXEN(1);
-    while (SERCOM0_REGS->USART_INT.SERCOM_SYNCBUSY & SERCOM_USART_INT_SYNCBUSY_CTRLB_Msk);
     SERCOM0_REGS->USART_INT.SERCOM_CTRLB |= SERCOM_USART_INT_CTRLB_RXEN(1);
+    while (SERCOM0_REGS->USART_INT.SERCOM_SYNCBUSY & SERCOM_USART_INT_SYNCBUSY_CTRLB_Msk);
+    SERCOM0_REGS->USART_INT.SERCOM_CTRLB |= SERCOM_USART_INT_CTRLB_TXEN(1);
     while (SERCOM0_REGS->USART_INT.SERCOM_SYNCBUSY & SERCOM_USART_INT_SYNCBUSY_CTRLB_Msk);
 
     SERCOM0_REGS->USART_INT.SERCOM_CTRLA |= SERCOM_USART_INT_CTRLA_ENABLE(1);
@@ -93,8 +111,18 @@ static void system_uart0_init(void)
 static void system_uart0_deinit(void)
 {
     // uart reset
+    SERCOM0_REGS->USART_INT.SERCOM_CTRLA &= ~SERCOM_USART_INT_CTRLA_ENABLE(1);
+    while (SERCOM0_REGS->USART_INT.SERCOM_SYNCBUSY & \
+            (SERCOM_USART_INT_SYNCBUSY_SWRST_Msk | SERCOM_USART_INT_SYNCBUSY_ENABLE_Msk));
+
     SERCOM0_REGS->USART_INT.SERCOM_CTRLA |= SERCOM_USART_INT_CTRLA_SWRST(1);
     while (SERCOM0_REGS->USART_INT.SERCOM_SYNCBUSY & SERCOM_USART_INT_SYNCBUSY_SWRST_Msk);
+
+    // uart0 pin reset
+    PORT_REGS->GROUP[0].PORT_PMUX[2] &= ~PORT_PMUX_PMUXE_D; // set PA4 as function D (SERCOM0)
+    PORT_REGS->GROUP[0].PORT_PINCFG[4] &= ~PORT_PINCFG_PMUXEN(1); // set PA4 PMUXEN
+    PORT_REGS->GROUP[0].PORT_PMUX[3] &= ~PORT_PMUX_PMUXE_D; // set PA6 as function D (SERCOM0)
+    PORT_REGS->GROUP[0].PORT_PINCFG[6] &= ~PORT_PINCFG_PMUXEN(1); // set PA6 PMUXEN
 }
 
 /*******************************************************************************

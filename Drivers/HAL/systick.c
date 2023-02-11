@@ -4,7 +4,7 @@
  * @brief Systick driver
  * @date 2022.08.17
  * 
- * // TODO : SysTick_Config() ?
+ * // TODO: SysTick_Config() ?
  */
 
 #include "systick.h"
