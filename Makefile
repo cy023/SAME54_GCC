@@ -12,10 +12,10 @@
 TARGET = main
 
 # Upload Info.
-COMPORT    ?= 
-UPLOAD_HEX ?= test_00_uart
+COMPORT    ?= COM17
+# UPLOAD_HEX ?= test_00_uart
 # UPLOAD_HEX ?= test_01_sysnow
-
+UPLOAD_HEX ?= test_size
 
 ## MCU Info.
 CPU       = -mcpu=cortex-m4
@@ -107,7 +107,7 @@ CFLAGS += $(C_INCLUDES)
 
 ## Assembler Options
 ASMFLAGS  = $(MCUFLAGS)
-ASMFLAGS += -x assembler-with-cpp -Wa,-g$(DEBUG)
+ASMFLAGS += -x assembler-with-cpp -Wa,$(DEBUG)
 ASMFLAGS += $(CFLAGS)
 
 ## Link Options
@@ -141,7 +141,7 @@ test: $(C_OBJECTS) $(C_TESTOBJ) $(TEST_TARGET)
 
 macro: $(C_OBJECTS:.o=.i) $(C_APPOBJS:.o=.i) $(C_TESTOBJ:.o=.i)
 
-lib: $(BUILD_DIR)/libc4mrtos.a
+dump: $(BUILD_DIR)/$(TARGET).lss $(C_TESTOBJ:.o=.lss) $(BUILD_DIR)/$(TARGET).sym $(C_TESTOBJ:.o=.sym)
 
 size: $(TARGET_FILE)
 	$(SIZE) $(TARGET_FILE)
@@ -150,7 +150,7 @@ clean:
 	-rm -rf $(BUILD_DIR)
 
 upload:
-	asaloader prog -p $(COMPORT) -f build/$(UPLOAD_HEX).hex
+	serprog prog -p $(COMPORT) -f build/$(UPLOAD_HEX).hex
 
 terminal:
 	putty -serial $(COMPORT) -sercfg 38400,1,N,N
@@ -159,7 +159,7 @@ systeminfo:
 	@uname -a
 	@$(CC) --version
 
-.PHONY: all test macro lib size systeminfo clean upload terminal
+.PHONY: all test macro dump size systeminfo clean upload terminal
 
 ################################################################################
 # Build The Project
